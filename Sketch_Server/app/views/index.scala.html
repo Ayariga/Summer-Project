@@ -1,0 +1,272 @@
+@(message: String)
+
+@main("Welcome to Play 2.0") {
+    
+      
+    <div class="greeting"></div>
+    <div class = "ken"></div>
+    <div class = "jsn"></div>   
+    <div> SKETCHING PAD</div>
+    
+    <div id ="canvasdiv" style="position:relative; width:350px; height:400px">
+    
+      <canvas id="canvas2" style="z-index: 2; position:absolute; left:0px; top:0px;
+" height="400px" width="350">
+
+This text is displayed if your browser does not support HTML5 Canvas.
+
+</canvas>
+     
+     <canvas id="canvas1" style="z-index: 2; position:absolute; left:0px; top:0px;
+" height="400px" width="350">
+
+This text is displayed if your browser does not support HTML5 Canvas.
+
+</canvas>    
+     </div> 
+     
+     <br></br>     
+     <button class= "createclass"> Create Class</button>
+     <button class="add">Add Example</button>
+     <button class="classify">Classify</button>
+     <button class="refresh">Refresh</button>
+     
+    
+    <script type="text/javascript" charset="utf-8">
+     
+    
+      
+       var canvas1 = document.getElementById('canvas1');
+       var canvas2 = document.getElementById('canvas2');
+     
+       canvas1.style.border = "blue 2px solid";
+       canvas2.style.border = "blue 2px solid";        
+       
+       var context1 = canvas1.getContext('2d');
+       var context2 = canvas2.getContext('2d');
+                     
+       var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
+       var createclasssocket = new WS("@routes.Application.createClass().webSocketURL(request)")
+      
+       var disp = $('.ken'); 
+       var jetli = $('.jsn');
+             
+        var arrayX= []; 
+        var arrayY= [];
+        var timeArray = [];
+        var counter = 0;
+        
+        var position =0; 
+        var xcoordinate = 0;
+        var ycoordinate = 0;
+        var boundboxmaxX = 0;
+        var boundboxmaxY = 0;
+        var boundboxminX = 0;
+        var boundboxminY = 0;
+        
+        var minPoint =[2];
+        var maxPoint =[2];
+        
+         var starttime = 0.00;
+         var stoptime = 0.00;
+         
+         var checker = 0; 
+         var ichecker = true; 
+         var connected = false;
+         var pressed = false;                                   
+       
+       var myjeson = {"x":arrayX,"y":arrayY, "maxPoint":maxPoint,"minPoint": minPoint, "timeArray":timeArray} ;            
+       
+       function pixelCount ()
+       {  
+          arrayX[counter] = xcoordinate;        
+          arrayY[counter] = ycoordinate;
+          timeArray[counter] = stoptime;
+          counter += 1; 
+          }                            
+         
+       function Boundbox(p) {
+        if(p.x > boundboxmaxX)
+         { boundboxmaxX = p.x ;}
+         
+         if (p.x < boundboxminX )
+         { boundboxminX = p.x; }
+         
+         if (p.y > boundboxmaxY )
+         { boundboxmaxY = p.y; }
+        
+          if (p.y < boundboxminY )
+         { boundboxminY = p.y ; }               
+        
+        //used to set the minimum and maximum coordinates  
+        //points for the bound box 
+        minPoint[0] = boundboxminX; //for the x axis
+        minPoint[1] = boundboxmaxY; //for the y axis
+        maxPoint[0] = boundboxmaxX; //for the x axis
+        maxPoint[1]= boundboxminY; //for the y axis
+       // disp.append("..GOD..");               
+         }
+                                                
+        function positionWidthE (e){
+    	var o = $(canvas1).offset();
+    	return {x : e.clientX - o.left , y: e.clientY - o.top};
+    	  	}   
+    	  	
+       
+    function onMouseDown(e) {    
+   	var p = positionWidthE(e); 		
+     pressed = true;	
+     position = p;  
+     boundboxminX = p.x;
+     boundboxminY = p.y;      
+     if(ichecker) 
+     {pixelcount()         
+     starttime = 0;
+     stoptime =0;}     
+    }
+    
+    
+    function onMouseUp(e){
+    var p = positionWidthE(e)
+    pressed = false;
+     boundboxmaxX = 0;
+     boundboxmaxY = 0;
+     boundboxminX = 0;
+      boundboxminY = 0;
+     ichecker = true;
+       }
+    
+        
+     function onMouseMove(e){
+    	var p = positionWidthE(e);   	
+    	if(pressed){
+    	    ichecker = false; //prevents the mouse down event listener from changing variables    	    
+    	    context1.beginPath();
+    	    context1.strokeStyle= 'rgb(200,40,20)';
+    	    context1.lineWidth=3;
+    		context1.moveTo(position.x,position.y);
+    	    context1.lineTo(p.x,p.y);     	       	       		 		 		
+    		context1.stroke();
+    		Boundbox(p);   		
+    		position = p;     		  		
+    	    filter(p);
+    	         	         	                                                                                                               		   		                    		 		  		
+    	}   }
+    	
+    	
+    	 setInterval(initialTimer, 15); 
+    
+         function initialTimer()
+         {
+          stoptime ++;          
+         }	
+    	    	    	
+    
+    function filter(p)
+    { 
+    if(pressed)
+    { //calculating the distance travelled between two pixels
+      var lx = p.x - position.x;
+      var ly = p.y - position.y;
+      var dx = Math.sqrt(Math.pow(lx,2) + Math.pow(ly,2));
+      var dt = stoptime - starttime;
+      starttime = stoptime; 
+        
+      if(dx / dt < 0.0025) //computing the velocity of a stroke
+     {
+     context1.fillStyle="green";
+     context1.beginPath();
+     context1.arc(p.x,p.y,3,0,Math.PI*2,true);
+     context1.closePath();
+     context1.fill();
+     //this is for populating the coordinate arrays  		   		
+          xcoordinate = p.x;
+          ycoordinate = p.y;        
+          pixelCount();      
+     }  } 
+    }
+    
+    
+       	
+    setInterval(boundDraw, 20);	
+    
+    function boundDraw ()    
+    {      
+     if(pressed)
+           { 
+           context2.clearRect(0, 0, 350, 400);}
+         
+            context2.strokeStyle = 'rgb(0,20,220)';
+            context2.beginPath();    
+            context2.moveTo(boundboxminX,boundboxminY);            
+            context2.lineTo(boundboxmaxX,boundboxminY);
+            context2.lineTo(boundboxmaxX,boundboxmaxY);                                              
+            context2.lineTo(boundboxminX, boundboxmaxY);
+            context2.lineTo(boundboxminX,boundboxminY);           
+            context2.stroke();                      		   	   
+    }
+    
+    context2.lineJoin = 'round';
+    context2.lineCap = 'round';
+    context1.lineJoin = 'round';
+    context1.lineCap = 'round';        
+    canvas1.addEventListener("mousedown" , onMouseDown);
+    canvas1.addEventListener("mouseup" , onMouseUp);
+    canvas1.addEventListener("mousemove" , onMouseMove);
+   
+       
+        $(function() {
+            var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
+            var sock = new WS("@routes.Application.sockHandler().webSocketURL(request)")
+            
+            sock.onmessage = function(event) { 
+                        
+                $('.greeting').append(event.data)
+            }                        
+            
+            
+            $('button.createclass').click(function() { 
+             createclasssocket.send(JSON.stringify(myjeson));})                        
+             
+              
+            var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
+            var sock2 = new WS("@routes.Application.addGesture().webSocketURL(request)")
+             
+            
+            
+             $('button.add').click(function() { 
+             sock2.send(JSON.stringify(myjeson));})                        
+                               
+      
+            
+            $('button.refresh').click (function(){
+             //this clears  the arrays and variables 
+             arrayX.lenght= 0;
+             arrayY.legnth = 0; 
+             minPoint.legnth = 0;
+             maxPoint.legnth = 0;
+             timeArray.legnth = 0;
+             counter = 0;
+            context1.clearRect(0, 0, 350, 400); 
+             context2.clearRect(0, 0, 350, 400);})
+             
+             
+            $('button.classify').click(function() { 
+                                
+             sock.send(JSON.stringify(myjeson));
+            
+             //this clears  the arrays and variables 
+             arrayX.legnth = 0;
+             arrayY.legnth = 0; 
+             minPoint.legnth = 0;
+             maxPoint.legnth = 0;
+             timeArray.legnth = 0;
+             counter = 0;  
+                                               
+            });            
+        })          
+        
+     </script>
+     
+    
+}
